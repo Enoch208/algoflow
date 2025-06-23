@@ -1,0 +1,8 @@
+{
+    "name": "generating-animation",
+    "version": "1.0.0",
+    "description": "A Lottie animation for a generating or loading state.",
+    "files": [
+        "animation.json"
+    ]
+} 
