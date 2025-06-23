@@ -14,6 +14,7 @@
     "lottie-react": "^2.4.1",
     "mermaid": "^11.7.0",
     "next": "15.3.4",
+    "nprogress": "^0.2.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "zustand": "^5.0.5"
@@ -21,6 +22,7 @@
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
+    "@types/nprogress": "^0.2.3",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "tailwindcss": "^4",

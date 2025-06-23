@@ -14,8 +14,63 @@ function cleanMermaidSyntax(code: string): string {
   cleaned = cleaned.replace(/\[\\\"([^"]*)\"\\/g, '[\\$1\\]'); // Output parallelogram
   cleaned = cleaned.replace(/\[\(\"([^"]*)\"\)\]/g, '[($1)]'); // Database/Storage
   
+  // Fix output parallelogram syntax - use single backslash format that works in Mermaid
+  cleaned = cleaned.replace(/\[\\\\([^\\]*)\\\\\]/g, '[\\$1\\]'); // Convert double to single backslash
+  cleaned = cleaned.replace(/\[\\([^\\]*)\\\]/g, '[\\$1\\]'); // Ensure proper format
+  // Handle incomplete backslash syntax
+  cleaned = cleaned.replace(/\[\\([^\\]*)\]/g, '[\\$1\\]');
+  
+  // Ensure input parallelograms have proper syntax (keep these as they work)
+  cleaned = cleaned.replace(/\[\/([^\/]*)\]/g, '[/$1/]');
+  
   // Fix double quotes in text
   cleaned = cleaned.replace(/"/g, '');
+  
+  // Remove problematic characters from node text that cause parser errors
+  // Replace parentheses with spaces in node text
+  cleaned = cleaned.replace(/\[([^\]]*)\(/g, (match, text) => {
+    return `[${text.replace(/\(/g, ' ').replace(/\)/g, ' ')}`;
+  });
+  cleaned = cleaned.replace(/\{([^}]*)\(/g, (match, text) => {
+    return `{${text.replace(/\(/g, ' ').replace(/\)/g, ' ')}`;
+  });
+  cleaned = cleaned.replace(/\[\/([^\/]*)\(/g, (match, text) => {
+    return `[/${text.replace(/\(/g, ' ').replace(/\)/g, ' ')}`;
+  });
+  cleaned = cleaned.replace(/\[\\([^\\]*)\(/g, (match, text) => {
+    return `[\\${text.replace(/\(/g, ' ').replace(/\)/g, ' ')}`;
+  });
+  
+  // Clean up remaining parentheses in node text
+  cleaned = cleaned.replace(/\[([^\]]*)\)/g, (match, text) => {
+    return `[${text.replace(/\)/g, ' ')}]`;
+  });
+  cleaned = cleaned.replace(/\{([^}]*)\)/g, (match, text) => {
+    return `{${text.replace(/\)/g, ' ')}}`;
+  });
+  
+  // Remove other problematic special characters from node text (but preserve shape syntax)
+  // Handle regular rectangles
+  cleaned = cleaned.replace(/\[([^\]\\\/]*)\]/g, (match, text) => {
+    const cleanText = text.replace(/[(){}[\],;:]/g, ' ').replace(/\s+/g, ' ').trim();
+    return `[${cleanText}]`;
+  });
+  // Handle decisions
+  cleaned = cleaned.replace(/\{([^}]*)\}/g, (match, text) => {
+    const cleanText = text.replace(/[(){}[\],;:]/g, ' ').replace(/\s+/g, ' ').trim();
+    return `{${cleanText}}`;
+  });
+  // Handle input parallelograms
+  cleaned = cleaned.replace(/\[\/([^\/]*)\//g, (match, text) => {
+    const cleanText = text.replace(/[(){}[\],;:]/g, ' ').replace(/\s+/g, ' ').trim();
+    return `[/${cleanText}/]`;
+  });
+  // Handle output parallelograms with proper cleaning
+  cleaned = cleaned.replace(/\[\\([^\\]*)\\/g, (match, text) => {
+    const cleanText = text.replace(/[(){}[\],;:]/g, ' ').replace(/\s+/g, ' ').trim();
+    return `[\\${cleanText}\\]`;
+  });
+  
   
   // Fix invalid node IDs (remove special characters)
   cleaned = cleaned.replace(/([A-Za-z0-9]+)\s*\[/g, (match, id) => {
@@ -36,6 +91,11 @@ function cleanMermaidSyntax(code: string): string {
   
   // Remove empty lines
   cleaned = cleaned.replace(/\n\s*\n/g, '\n');
+  
+  // Fix malformed nodes with double closing brackets ]] (do this last after all other transformations)
+  cleaned = cleaned.replace(/\]\]/g, ']');
+  cleaned = cleaned.replace(/\}\}/g, '}');
+  cleaned = cleaned.replace(/\)\)/g, ')');
   
   return cleaned;
 }
@@ -58,19 +118,22 @@ You are an expert at converting algorithm descriptions into valid Mermaid flowch
 
 MANDATORY SHAPE RULES:
 1. Start/End: ([Start]) and ([End]) - ovals
-2. Input: [/Input Text/] - parallelogram (left slant)
-3. Output: [\Output Text\] - parallelogram (right slant)
+2. Input: [/Input Text/] - parallelogram (left slant) - ALWAYS use this for any input operations
+3. Output: [\\Output Text\\] - parallelogram (right slant) - ALWAYS use this for output operations
 4. Process: [Process Step] - rectangle
 5. Decision: {Question?} - diamond
 6. Storage/Database: [(Database)] - cylinder
 
 CRITICAL SYNTAX RULES:
 1. Use ONLY "flowchart TD" format
-2. Node IDs: simple letters/numbers (A, B, C1, Input1, etc.)
-3. NO quotes around text
-4. Decision branches: D -->|Yes| E or D -->|No| F
-5. Keep labels under 18 characters
-6. NO special characters in node IDs
+2. Node IDs: MUST be single, continuous words (e.g., A, B, C1, Input1, ProcessStep). NO spaces or special characters.
+3. NO quotes around text content inside shapes.
+4. NO parentheses, brackets, commas, colons, or semicolons in node text.
+5. Decision branches: D -->|Yes| E or D -->|No| F
+6. Keep labels under 20 characters and use simple words only.
+7. Links must use '-->' and be on separate lines from node definitions.
+8. For ANY input operation (reading, getting, receiving data), use [/Input Text/] parallelogram
+9. For ANY output operation (displaying, showing, returning, printing data), use [\\Output Text\\] parallelogram
 
 CORRECT EXAMPLE:
 flowchart TD
@@ -78,10 +141,10 @@ flowchart TD
     Input1[/Get Material Name/]
     Process1[Convert to Lowercase]
     Decision1{In Ductile List?}
-    Output1[\Return Ductile\]
+    Output1[\\Return Ductile\\]
     Decision2{In Brittle List?}
-    Output2[\Return Brittle\]
-    Output3[\Return Unknown\]
+    Output2[\\Return Brittle\\]
+    Output3[\\Return Unknown\\]
     End([End])
     
     Start --> Input1
@@ -95,7 +158,7 @@ flowchart TD
     Output2 --> End
     Output3 --> End
 
-Convert this algorithm using EXACT shape conventions:
+Convert this algorithm using EXACT shape conventions. Remember to use parallelograms for ALL input/output operations:
 ${algorithmText}
 
 Return ONLY valid Mermaid flowchart code. NO explanations, NO markdown blocks.
@@ -104,11 +167,6 @@ Return ONLY valid Mermaid flowchart code. NO explanations, NO markdown blocks.
     const result = await model.generateContent(prompt);
     const response = await result.response;
     const fullResponse = response.text();
-
-    // Log the full response for debugging
-    console.log('=== GEMINI FULL RESPONSE ===');
-    console.log(fullResponse);
-    console.log('=== END RESPONSE ===');
 
     // Extract and clean the Mermaid code from the response
     let mermaidCode = fullResponse.trim();
@@ -130,13 +188,9 @@ Return ONLY valid Mermaid flowchart code. NO explanations, NO markdown blocks.
     // Clean up common syntax issues
     mermaidCode = cleanMermaidSyntax(mermaidCode);
 
-    console.log('=== EXTRACTED MERMAID CODE ===');
-    console.log(mermaidCode);
-    console.log('=== END MERMAID CODE ===');
-
     return NextResponse.json({ 
       mermaidCode: mermaidCode,
-      fullResponse: fullResponse // Include full response for debugging
+      fullResponse: fullResponse
     });
   } catch (error) {
     console.error('Error converting algorithm:', error);
@@ -144,11 +198,15 @@ Return ONLY valid Mermaid flowchart code. NO explanations, NO markdown blocks.
     // Fallback to simple conversion if API fails
     const fallbackMermaidCode = `flowchart TD
     Start([Start])
-    Process["Process Algorithm"]
+    Input1[/Enter Data/]
+    Process[Process Algorithm]
+    Output1[\\Display Result\\]
     End([End])
-    Start --> Process
-    Process --> End`;
-
+    Start --> Input1
+    Input1 --> Process
+    Process --> Output1
+    Output1 --> End`;
+    
     return NextResponse.json({ 
       mermaidCode: fallbackMermaidCode,
       fallback: true 

@@ -72,9 +72,20 @@ export default function FlowchartPage() {
         }
       }).catch((error) => {
         console.error('Mermaid rendering error:', error);
-        // Fallback: show the raw code if rendering fails
+        // Show a sleek error message instead of raw error details
         if (mermaidRef.current) {
-          mermaidRef.current.innerHTML = `<pre style="color: red;">Error rendering diagram: ${error.message}</pre>`;
+          mermaidRef.current.innerHTML = `
+            <div class="text-center py-8">
+              <div class="bg-gray-50 rounded-lg p-6 max-w-md mx-auto">
+                <div class="text-4xl mb-3">😔</div>
+                <h3 class="text-lg font-semibold text-gray-800 mb-2">Something went wrong</h3>
+                <p class="text-gray-600 text-sm mb-4">We couldn't generate your flowchart properly. Please refresh and try again.</p>
+                <button onclick="window.location.reload()" class="bg-amber-500 hover:bg-amber-600 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors">
+                  Refresh & Try Again
+                </button>
+              </div>
+            </div>
+          `;
         }
       });
     }
