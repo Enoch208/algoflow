@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@google/generative-ai": "^0.24.1",
+    "@vercel/analytics": "^1.5.0",
     "html2canvas": "^1.4.1",
     "lottie-react": "^2.4.1",
     "mermaid": "^11.7.0",
